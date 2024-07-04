@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-${{ matrix.target }}
-          path: ./build
+          path: ./build/*
 
   release:
     needs: build
@@ -65,14 +65,14 @@ jobs:
           name: build-macos
           path: ./artifacts/macos
 
-      - name: List Linux artifacts
-        run: ls -l ./artifacts/linux
-
-      - name: List Windows artifacts
-        run: ls -l ./artifacts/windows
-
-      - name: List MacOS artifacts
-        run: ls -l ./artifacts/macos
+      - name: List artifacts
+        run: |
+          echo "Linux artifacts:"
+          ls -l ./artifacts/linux
+          echo "Windows artifacts:"
+          ls -l ./artifacts/windows
+          echo "MacOS artifacts:"
+          ls -l ./artifacts/macos
 
       - name: Create Release
         id: create_release
