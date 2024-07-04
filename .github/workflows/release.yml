@@ -10,12 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
             target: linux
           - os: windows-latest
             target: windows
+          - os: macos-latest
+            target: macos
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -56,11 +58,21 @@ jobs:
           name: build-windows
           path: ./artifacts/windows
 
+      - name: Download MacOS artifacts
+        uses: actions/download-artifact@v3
+        if: always()
+        with:
+          name: build-macos
+          path: ./artifacts/macos
+
       - name: List Linux artifacts
         run: ls -l ./artifacts/linux
 
       - name: List Windows artifacts
         run: ls -l ./artifacts/windows
+
+      - name: List MacOS artifacts
+        run: ls -l ./artifacts/macos
 
       - name: Create Release
         id: create_release
@@ -91,4 +103,14 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./artifacts/windows/*
           asset_name: windows-tsh-${{ github.ref }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets (MacOS)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/macos/*
+          asset_name: macos-tsh-${{ github.ref }}
           asset_content_type: application/octet-stream
