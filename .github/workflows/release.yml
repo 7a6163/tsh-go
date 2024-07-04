@@ -25,7 +25,8 @@ jobs:
         with:
           go-version: '1.18'
 
-      - name: Install Make
+      - name: Install Make (Linux only)
+        if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get install -y make
 
       - name: Build binary
@@ -44,7 +45,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
-          path: ./artifacts
+          name: build-linux
+          path: ./artifacts/linux
+      - name: Download artifacts (Windows)
+        if: always()
+        uses: actions/download-artifact@v3
+        with:
+          name: build-windows
+          path: ./artifacts/windows
 
       - name: Create Release
         id: create_release
@@ -57,12 +65,23 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Release Assets
+      - name: Upload Release Assets (Linux)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/build/*
-          asset_name: ${{ matrix.target }}-tsh-${{ github.ref }}-${{ matrix.os }}
+          asset_path: ./artifacts/linux/*
+          asset_name: linux-tsh-${{ github.ref }}-${{ matrix.os }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Assets (Windows)
+        if: always()
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./artifacts/windows/*
+          asset_name: windows-tsh-${{ github.ref }}-${{ matrix.os }}
           asset_content_type: application/octet-stream
