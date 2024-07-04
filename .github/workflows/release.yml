@@ -40,7 +40,9 @@ jobs:
         env:
           GOOS: ${{ matrix.GOOS }}
           GOARCH: ${{ matrix.GOARCH }}
-        run: go build -o tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        run: |
+          cd /home/runner/work/tsh-go/tsh-go # Ensure you're in the right directory
+          go build -o tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -77,4 +79,3 @@ jobs:
           asset_path: ./artifacts/tsh-go-*
           asset_name: tsh-go-${{ github.ref }}-${{ matrix.os }}-${{ matrix.arch }}
           asset_content_type: application/octet-stream
-  
