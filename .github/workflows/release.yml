@@ -40,9 +40,7 @@ jobs:
         env:
           GOOS: ${{ matrix.GOOS }}
           GOARCH: ${{ matrix.GOARCH }}
-        run: |
-          cd /home/runner/work/tsh-go/tsh-go # Ensure you're in the right directory
-          go build -o tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+        run: go build -o tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }} ./cmd/tsh-go
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
