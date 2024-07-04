@@ -42,17 +42,25 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
+      - name: Download Linux artifacts
         uses: actions/download-artifact@v3
+        if: always()
         with:
           name: build-linux
           path: ./artifacts/linux
-      - name: Download artifacts (Windows)
-        if: always()
+
+      - name: Download Windows artifacts
         uses: actions/download-artifact@v3
+        if: always()
         with:
           name: build-windows
           path: ./artifacts/windows
+
+      - name: List Linux artifacts
+        run: ls -l ./artifacts/linux
+
+      - name: List Windows artifacts
+        run: ls -l ./artifacts/windows
 
       - name: Create Release
         id: create_release
@@ -72,16 +80,15 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./artifacts/linux/*
-          asset_name: linux-tsh-${{ github.ref }}-${{ matrix.os }}
+          asset_name: linux-tsh-${{ github.ref }}
           asset_content_type: application/octet-stream
 
       - name: Upload Release Assets (Windows)
-        if: always()
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./artifacts/windows/*
-          asset_name: windows-tsh-${{ github.ref }}-${{ matrix.os }}
+          asset_name: windows-tsh-${{ github.ref }}
           asset_content_type: application/octet-stream
