@@ -10,23 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            GOOS: linux
-            GOARCH: amd64
-          - os: ubuntu-latest
-            GOOS: linux
-            GOARCH: arm64
+            target: linux
           - os: windows-latest
-            GOOS: windows
-            GOARCH: amd64
-          - os: macos-latest
-            GOOS: darwin
-            GOARCH: amd64
-          - os: macos-latest
-            GOOS: darwin
-            GOARCH: arm64
+            target: windows
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,17 +25,17 @@ jobs:
         with:
           go-version: '1.18'
 
+      - name: Install Make
+        run: sudo apt-get install -y make
+
       - name: Build binary
-        env:
-          GOOS: ${{ matrix.GOOS }}
-          GOARCH: ${{ matrix.GOARCH }}
-        run: go build -o tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }} ./cmd/tsh-go
+        run: make ${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
-          path: tsh-go-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+          name: build-${{ matrix.target }}
+          path: ./build
 
   release:
     needs: build
@@ -74,6 +63,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/tsh-go-*
-          asset_name: tsh-go-${{ github.ref }}-${{ matrix.os }}-${{ matrix.arch }}
+          asset_path: ./artifacts/build/*
+          asset_name: ${{ matrix.target }}-tsh-${{ github.ref }}-${{ matrix.os }}
           asset_content_type: application/octet-stream
