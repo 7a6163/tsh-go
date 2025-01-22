@@ -8,109 +8,61 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            target: linux
-          - os: windows-latest
-            target: windows
-          - os: macos-latest
-            target: macos
+        goos: [linux, windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.18'
+          go-version: '1.21'
 
-      - name: Install Make (Linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y make
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          # Set binary name based on OS
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BINARY_NAME=tsh-${{ matrix.goos }}-${{ matrix.goarch }}.exe
+          else
+            BINARY_NAME=tsh-${{ matrix.goos }}-${{ matrix.goarch }}
+          fi
+          # Build the binary
+          go build -v -o $BINARY_NAME
 
-      - name: Build binary
-        run: make ${{ matrix.target }}
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.target }}
-          path: ./build/*
+          name: binaries
+          path: tsh-*
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v3
-        if: always()
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: build-linux
-          path: ./artifacts/linux
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v3
-        if: always()
-        with:
-          name: build-windows
-          path: ./artifacts/windows
-
-      - name: Download MacOS artifacts
-        uses: actions/download-artifact@v3
-        if: always()
-        with:
-          name: build-macos
-          path: ./artifacts/macos
-
-      - name: List artifacts
-        run: |
-          echo "Linux artifacts:"
-          ls -l ./artifacts/linux
-          echo "Windows artifacts:"
-          ls -l ./artifacts/windows
-          echo "MacOS artifacts:"
-          ls -l ./artifacts/macos
+          name: binaries
+          path: dist
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          files: dist/*
+          generate_release_notes: true
           draft: false
           prerelease: false
-
-      - name: Upload Release Assets (Linux)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/linux/*
-          asset_name: linux-tsh-${{ github.ref }}
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets (Windows)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/windows/*
-          asset_name: windows-tsh-${{ github.ref }}
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Assets (MacOS)
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/macos/*
-          asset_name: macos-tsh-${{ github.ref }}
-          asset_content_type: application/octet-stream
