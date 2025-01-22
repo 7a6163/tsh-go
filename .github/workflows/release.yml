@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -33,19 +35,20 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         run: |
           # Set binary name based on OS
+          BINARY_NAME="tsh"
           if [ "${{ matrix.goos }}" = "windows" ]; then
-            BINARY_NAME=tsh-${{ matrix.goos }}-${{ matrix.goarch }}.exe
-          else
-            BINARY_NAME=tsh-${{ matrix.goos }}-${{ matrix.goarch }}
+            BINARY_NAME="${BINARY_NAME}.exe"
           fi
-          # Build the binary
-          go build -v -o $BINARY_NAME
+          
+          # Build the binary from cmd/tsh
+          echo "Building for ${{ matrix.goos }}/${{ matrix.goarch }}..."
+          go build -v -o "dist/${BINARY_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }}" ./cmd/tsh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: binaries
-          path: tsh-*
+          path: dist/*
 
   release:
     needs: build
