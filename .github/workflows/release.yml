@@ -50,8 +50,10 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: tsh-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/*
+          if-no-files-found: error
+          retention-days: 1
 
   release:
     needs: build
@@ -59,16 +61,19 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download artifacts
+      - name: Create release directory
+        run: mkdir -p release
+
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binaries
-          path: dist
+          path: release
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: release/**/*
           generate_release_notes: true
           draft: false
           prerelease: false
